@@ -3,19 +3,9 @@
 using namespace glm;
 
 //--------------------------------------------------------------
-void ofApp::setup(){
-    // Setup camera (for 3D rendering)
-    cam.setPosition(vec3(0., 0., 2.));
-    cam.setNearClip(0.05);
-    cam.setFarClip(100.);
-    
-    // Other setup for 3D rendering
-    ofEnableDepthTest();
-    ofSetFrameRate(40); // must be set for ofGetTargetFrameRate to work
-    
-    // Build shader (from GLSL code)
-    build(shader, R"(
-         
+static std::string glslLighting(){
+    return R"(
+        
         struct Light {
             vec3 pos;
             float strength;
@@ -35,16 +25,16 @@ void ofApp::setup(){
             vec3 diffuse;
             vec3 specular;
         };
- 
+
         // In-place addition : a += b
- 
+
         void addTo(inout LightFall a, in LightFall b){
             a.diffuse += b.diffuse;
             a.specular += b.specular;
         }
 
         // Compute light components falling on surface
- 
+
         LightFall computeLightFall(vec3 pos, vec3 N, vec3 eye, in Light lt, in Material mt){
             vec3 lightDist = lt.pos - pos;
             float hh = lt.halfDist * lt.halfDist;
@@ -53,12 +43,12 @@ void ofApp::setup(){
             vec3 L = normalize(lightDist);
 
             // diffuse
- 
+
             float d = max(dot(N, L), 0.);
             d += lt.ambient;
 
             //specular
- 
+
             vec3 V = normalize(eye - pos);
             vec3 H = normalize(L + V);
             float s = pow(max(dot(N, H), 0.), mt.shine);
@@ -69,11 +59,28 @@ void ofApp::setup(){
         }
 
         // Get final color reflected off material
- 
+
         vec3 lightColor(in LightFall f, in Material mt){
             return f.diffuse * mt.diffuse + f.specular * mt.specular;
         }
+    )";
+}
 
+
+//--------------------------------------------------------------
+void ofApp::setup(){
+    // Setup camera (for 3D rendering)
+    cam.setPosition(vec3(0., 0., 2.));
+    cam.setNearClip(0.05);
+    cam.setFarClip(100.);
+    
+    // Other setup for 3D rendering
+    ofEnableDepthTest();
+    ofSetFrameRate(40); // must be set for ofGetTargetFrameRate to work
+    
+    // Build shader (from GLSL code)
+    build(shader, glslLighting() + R"(         
+        
         // Vertex program
 
         uniform mat4 projectionMatrix;
@@ -170,7 +177,7 @@ void ofApp::draw(){
 	cam.end();
 }
 
-//--------------------------------------------------------------
+
 void ofApp::keyPressed(int key){
 
 }

@@ -7,6 +7,7 @@ This file contains a collection of utilities to extend/simplify OF graphics.
 Lance Putnam, 2023
 */
 
+
 /// Push matrix, call function, then pop matrix
 template <class Func>
 static void matrixScope(const Func& f){

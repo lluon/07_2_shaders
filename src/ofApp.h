@@ -24,4 +24,5 @@ class ofApp : public ofBaseApp{
 		ofEasyCam cam;
 		ofShader shader;
 		ofMesh mesh;
+    
 };
