@@ -89,10 +89,10 @@ void ofApp::setup(){
  
         uniform vec3 eye;
   
-        in vec4 position;
-        in vec3 normal;
-        in vec3 color;
-        out vec3 vcolor;
+        in vec3 position;
+        in vec3 vnormal;
+        in vec3 vcolor;
+        out vec4 fragColor;
 
       void main(){
  
