@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ofMain.h"
+#include "PRamp.h"
+#include "BoingBall.h"
 
 class ofApp : public ofBaseApp{
 
@@ -46,8 +48,17 @@ class ofApp : public ofBaseApp{
         ofImage floorTex;    // floor texture
         ofImage envirMap;   //chrome
     
+        //BoingBall
+        std::vector<BoingBall> balls;
+
+        // torus
+        float tR = 0.7f; //mayor radious
+        float tr = 0.1f; //minor radious
+
         //math claculation
         float PI_calc = 355./113.;
         float oneOverPi = 113./355.;
+    
+        
 
 };

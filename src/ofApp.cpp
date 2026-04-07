@@ -86,14 +86,12 @@ static std::string glslLighting(){
         };
     
         // In-place addition : a += b
-    
         void addTo(inout LightFall a, in LightFall b){
             a.diffuse += b.diffuse;
             a.specular += b.specular;
         }
     
         // Compute light components falling on surface
-    
         LightFall computeLightFall(vec3 pos, vec3 N, vec3 eye, in Light lt, in Material mt){
             vec3 lightDist = lt.pos - pos;
             float hh = lt.halfDist * lt.halfDist;
@@ -102,16 +100,15 @@ static std::string glslLighting(){
             vec3 L = normalize(lightDist);
     
             // diffuse
-    
             float d = max(dot(N, L), 0.);
             d += lt.ambient;
     
-            //specular
-    
+            //specular    
             vec3 V = normalize(eye - pos);
             vec3 H = normalize(L + V);
             float s = pow(max(dot(N, H), 0.), mt.shine);
-    
+
+            //LightFall    
             LightFall fall;
             fall.diffuse = lt.diffuse * (d * atten);
             fall.specular = lt.specular * (s * atten);
@@ -119,8 +116,7 @@ static std::string glslLighting(){
         }
     
         // Get final color reflected off material
-    
-        vec3 lightColor(in LightFall f, in Material mt){
+            vec3 lightColor(in LightFall f, in Material mt){
             return f.diffuse * mt.diffuse + f.specular * mt.specular;
         }
         
@@ -152,7 +148,7 @@ void ofApp::setup(){
     ofEnableDepthTest(); // test fragments against depth buffer (for opaque geometry)
     ofEnableNormalizedTexCoords(); // use [0,1] range for UVs
     ofDisableArbTex(); // disable use of legacy rect textures
-    ofSetFrameRate(40); // must be set for ofGetTargetFrameRate to work
+    ofSetFrameRate(60); // must be set for ofGetTargetFrameRate to work
     
     // Load All Textures
     if(!wallTex.load("walls.jpg")) std::cout << "is not loading"<< std::endl;
@@ -162,20 +158,14 @@ void ofApp::setup(){
     MusicOnTex.load("gem.jpeg");
     floorTex.load("floor.jpeg");
     envirMap.load("envirMap.jpg");
-
     
     // Wrap settings for floor repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     torusTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
-    
-    
-    
-    
-    
+        
     // Build shader (from GLSL code)
     build(shader, R"(        
         // Vertex program
- 
         uniform mat4 projectionMatrix;
         uniform mat4 viewMatrix;
         uniform mat4 modelMatrix;
@@ -222,12 +212,10 @@ void ofApp::setup(){
   
     void main(){
         // declare pos and N
- 
         vec3 pos = vposition;
         vec3 N = normalize(vnormal);
  
          // lights setup
- 
          Light light1;
          light1.pos = vec3(1., 0., 0.);
          light1.strength = 1.;
@@ -240,19 +228,14 @@ void ofApp::setup(){
          light2.pos = -light1.pos;
          light2.diffuse = vec3(1., 1., 1.);
          light2.specular = light2.diffuse;
- 
-        
- 
-   
-         // Material setup
-  
+    
+         // Material setup  
          Material mtrl;
          mtrl.diffuse = texture(tex,vtexcoord).rgb;
          mtrl.specular = vec3(0.5);
          mtrl.shine = 60.;
  
          // light fall lights 
-  
          LightFall fall = computeLightFall(pos, N, eye, light1, mtrl);
          addTo(fall, computeLightFall(pos, N, eye, light2, mtrl));
   
@@ -270,9 +253,7 @@ void ofApp::setup(){
  
  )");
     
-    mesh = ofMesh::sphere(1.,16);
-    //    for (auto pos : mesh.getVertices())
-    //        mesh.addColor(ofFloatColor(0, 0, 1));
+    mesh = ofMesh::sphere(0.5, 16);
     
     // my torus
     int Nx = 50, Ny = 50;
@@ -294,16 +275,11 @@ void ofApp::setup(){
             }
         }
     }
-/*
-    for (auto& tc : torusMesh.getTexCoords()){
-        tc *= vec2(8., 4.); // repeat the texture
-    }
-*/
+
     
     for ( auto & p : torusMesh.getVertices()){
         auto t = 2. * PI_calc * p.x;
         auto l = 2. * PI_calc * (1 - p.y);
-        float tr = 0.1, tR = 1.;
         p = vec3 (
                   (tr * std::sin(l) + tR) * std::cos(t),
                   (tr * std::sin(l) + tR) * std::sin(t),
@@ -438,11 +414,26 @@ void ofApp::setup(){
     };
     calcNormals(floorMesh);
     
+    ofSetRandomSeed(58309834);
+    for (int i = 0; i < 50; i++){
+        BoingBall b;
+        b.setup((float)i);
+        balls.push_back(b);
+    }
+    
 }
+
+
 
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    
+    float dt = ofGetLastFrameTime();
+    
+    for (auto& b : balls){
+        b.update(dt, tR, tr);
+    }
     
 }
 
@@ -466,21 +457,18 @@ void ofApp::draw(){
     
     //wall texture
     wallTex.getTexture().bind(0);
-    wallsMesh.draw();
+        wallsMesh.draw();
     wallTex.getTexture().unbind(0);
     
     //ceiling texture
     ceilingTex.getTexture().bind(0);
-    ceilingMesh.draw();
+        ceilingMesh.draw();
     ceilingTex.getTexture().unbind(0);
-    
-    
-    
     
     ofPushMatrix(); // LOGO
     ofTranslate(0, -0.2, 0);
     MusicOnTex.getTexture().bind(0);
-    musicOnMesh.draw();
+        musicOnMesh.draw();
     MusicOnTex.getTexture().unbind(0);
     ofPopMatrix();
     
@@ -488,22 +476,18 @@ void ofApp::draw(){
     ofTranslate(0., -1.4, 0.);
     ofRotateDeg(0, 1, 1, 0);
     torusTex.getTexture().bind(0);
-    torusMesh.draw();
+        torusMesh.draw();
     torusTex.getTexture().unbind(0);
     ofPopMatrix();
     
-    
-    ofSetRandomSeed(58309834); // SPHERES
-    
-    shader.setUniform1f("reflectivity", 0.5f);
+    shader.setUniform1f("reflectivity", 0.4f);
     sphereTex.getTexture().bind(0);
-    for(int i=0; i<80; ++i){
-        ofPushMatrix();
-        ofTranslate(ofRandomUniform<vec3>(-1.,1.));
-        ofScale(0.05);
-        mesh.draw();
-        ofPopMatrix();
+    
+    
+    for (auto& b: balls){
+        b.draw(mesh);
     }
+    
     sphereTex.getTexture().unbind(0);
     
     shader.end();
