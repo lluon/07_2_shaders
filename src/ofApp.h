@@ -39,14 +39,27 @@ class ofApp : public ofBaseApp{
         ofMesh ceilingMesh;  // ceiling
         ofMesh floorMesh;    // floor
     
+        ofMesh fountainWaterMesh; //water in the fountain
+        
+        ofMesh goatSkullA;      // goat skull A
+        ofMesh goatSkullB;      // goat skull B
+        ofMesh blackWizard;     // black wizard statue
+        ofMesh lobster;         // lobster
+
         // Textures:
-        ofImage wallTex;     // wall texure
-        ofImage ceilingTex;  // ceiling texure
-        ofImage sphereTex;   // sphere texure
-        ofImage torusTex;    // torus texture
-        ofImage MusicOnTex;  // logo texture
-        ofImage floorTex;    // floor texture
-        ofImage envirMap;   //chrome
+        ofImage wallTex;        // wall texure
+        ofImage ceilingTex;     // ceiling texure
+        ofImage sphereTex;      // sphere texure
+        ofImage torusTex;       // torus texture
+        ofImage MusicOnTex;     // logo texture
+        ofImage floorTex;       // floor texture
+        ofImage envirMap;       //chrome
+
+        ofImage texGoatSkullA;      // goat skull A texture
+        ofImage texGoatSkullB;      // goat Skull B texture
+        ofImage texBlackWizard;     // black wizard texture
+        ofImage TexLobster;         // lobster texture
+
     
         //BoingBall
         std::vector<BoingBall> balls;
@@ -58,7 +71,7 @@ class ofApp : public ofBaseApp{
         //math claculation
         float PI_calc = 355./113.;
         float oneOverPi = 113./355.;
-    
         
-
+        // logo animation
+        float logoRotaton = 0;
 };

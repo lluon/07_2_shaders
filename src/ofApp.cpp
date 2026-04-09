@@ -156,8 +156,13 @@ void ofApp::setup(){
     sphereTex.load("sphere.jpeg");
     torusTex.load("car_underside_ed1.png");
     MusicOnTex.load("gem.jpeg");
-    floorTex.load("floor.jpeg");
+    floorTex.load("blackandwhite.jpeg");
     envirMap.load("envirMap.jpg");
+    
+    texGoatSkullA.load("gold.jpg");
+    texGoatSkullB.load("wall.jpeg");
+    texBlackWizard.load("blackmarble.jpg");
+    TexLobster.load("pinkMarble.jpg");
     
     // Wrap settings for floor repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
@@ -219,9 +224,9 @@ void ofApp::setup(){
          Light light1;
          light1.pos = vec3(1., 0., 0.);
          light1.strength = 1.;
-         light1.halfDist = 5.;
-         light1.ambient = 0.2;
-         light1.diffuse = vec3(1., 0.5, 0.); // orange
+         light1.halfDist = 3.0;
+         light1.ambient = 0.8;
+         light1.diffuse = vec3(0., 0., 0.); 
          light1.specular = light1.diffuse;
  
          Light light2 = light1;
@@ -252,9 +257,21 @@ void ofApp::setup(){
     }
  
  )");
-    
+    // my spheres (spilling in the fountain)
     mesh = ofMesh::sphere(0.5, 16);
     
+    // my four statue int ther corners
+    blackWizard.load("GreyWizard.ply"); // load black Wizard statue
+    goatSkullA.load("Goat_skull_a.ply"); // load black Wizard statue
+    goatSkullB.load("Goat_skull_b.ply"); // load black Wizard statue
+    lobster.load("lobsterz.ply"); // load black Wizard statue
+
+    // generate normals
+    calcNormals(blackWizard);
+    calcNormals(goatSkullA);
+    calcNormals(goatSkullB);
+    calcNormals(lobster);
+
     // my torus
     int Nx = 50, Ny = 50;
     torusMesh.setMode(OF_PRIMITIVE_TRIANGLES);
@@ -376,20 +393,31 @@ void ofApp::setup(){
     ceilingMesh.setMode(OF_PRIMITIVE_TRIANGLES);
     float h_top = h;
     vec3 c_tip = vec3(0, 0, h_top + 0.5);
-    c_tip = {c_tip.x, c_tip.z, c_tip.y};
-    ceilingMesh.addVertex(c_tip);
+    // the tip
+    ceilingMesh.addVertex(vec3(0, h_top + 0.5, 0));
     ceilingMesh.addTexCoord(vec2(0.5, 0.5));
-    
+    //the perimeter
     for(int i=0; i<Nx; ++i){
         float t = 2. * PI_calc * (float) i / (Nx - 1);
-        
         float r = getQuaterfoilRadious(t, r_base);
         
-        vec3 p = vec3( r * std::cos(t), r * std::sin(t), h_top);
-        p = {p.x, p.z, p.y};
+        vec3 p = vec3( r * std::cos(t), h_top, -r * std::sin(t));
         ceilingMesh.addVertex(p);
-        ceilingMesh.addTexCoord(vec2((float) i/Nx, 1.));
-        if (i < Nx - 1) ceilingMesh.addTriangle(0, i + 1, i +2);
+        
+        //planar uv mapping
+        float u = 0.5f + 0.5f * std::cos(t);
+        float v = 0.5f + 0.5f * std::sin(t);
+        ceilingMesh.addTexCoord(vec2(u,v));
+    }
+    for (int i = 0; i < Nx; ++i){
+        int current = i + 1;
+        int next = i + 2;
+        
+        if (i < Nx - 1){
+            ceilingMesh.addTriangle(0, next, current);
+        } else {
+            ceilingMesh.addTriangle(0, 1, current);
+        }
     }
     calcNormals(ceilingMesh);
     
@@ -399,31 +427,63 @@ void ofApp::setup(){
     
 //    f_center ={f_center.x,f_center.z,f_center.y};
     floorMesh.addVertex(vec3 (0, h_bottom, 0));
-    floorMesh.addTexCoord(vec2(0, 0));
+    floorMesh.addTexCoord(vec2(0.5, 0.5));
     
     for (int i = 0; i < Nx; ++i){
-        float t = 2. * PI_calc * (float) i / (Nx - 1);
-        float r = getQuaterfoilRadious(t, r_base);
+        float t_floor = 2. * PI_calc * (float) i / (Nx - 1);
+        float r = getQuaterfoilRadious(t_floor, r_base);
         
-        float px = r * std::cos(t);
-        float pz = r * std::sin(t);
+        float px = r * std::cos(t_floor);
+        float pz = r * std::sin(t_floor);
         
         floorMesh.addVertex(vec3(px, h_bottom, pz));
-        floorMesh.addTexCoord(vec2(px * textureRepeatScale, pz * textureRepeatScale));
-        if (i < Nx - 1) floorMesh.addTriangle(0, i + 2, i + 1);
-    };
+        float u = px * textureRepeatScale +0.5f;
+        float v = pz * textureRepeatScale +0.5f;
+        floorMesh.addTexCoord(vec2(u,v));
+        
+        if (i < Nx - 1) {
+            floorMesh.addTriangle(0, i + 2, i + 1);
+        } else {
+            floorMesh.addTriangle(0, 1, i + 1);
+        }
+    }
     calcNormals(floorMesh);
-    
+
+    // fountain setup
     ofSetRandomSeed(58309834);
     for (int i = 0; i < 50; i++){
         BoingBall b;
         b.setup((float)i);
         balls.push_back(b);
     }
+    // fountain water
+    float waterRadious = tR - tr;// perimeter of the disk
     
+    fountainWaterMesh.setMode(OF_PRIMITIVE_TRIANGLES);
+    fountainWaterMesh.addVertex(vec3(0, 0, 0));
+    fountainWaterMesh.addTexCoord(vec2(0.5, 0.5));
+    fountainWaterMesh.addNormal(vec3(0, 1, 0));
+    int segments = 60;
+    for (int i = 0; i < segments; i++){
+        float angle = 2.0 * PI_calc * (float)i / segments;
+        float x = waterRadious * std::cos(angle);
+        float z = waterRadious * std::sin(angle);
+        // add perimeter vertex
+        fountainWaterMesh.addVertex(vec3(x, 0, z));
+        fountainWaterMesh.addTexCoord(vec2(0.5 + 0.5 * std::cos(angle), 0.5 +0.5 * std::sin(angle)));
+        fountainWaterMesh.addNormal(vec3(0, 1, 0));
+    }
+    for (int i = 0; i < segments; i++) {
+        int current = i + 1;
+        int next = i + 2;
+        
+        if (i < segments - 1){
+            fountainWaterMesh.addTriangle(0, current, next);
+        } else {
+            fountainWaterMesh.addTriangle(0, current, 1);
+        }
+    }
 }
-
-
 
 
 //--------------------------------------------------------------
@@ -435,6 +495,7 @@ void ofApp::update(){
         b.update(dt, tR, tr);
     }
     
+    logoRotaton += 100.f * dt; // slow logo rotation
 }
 
 //--------------------------------------------------------------
@@ -447,32 +508,73 @@ void ofApp::draw(){
     shader.setUniform1f("u_oneOverPi", oneOverPi);
     shader.setUniformTexture("envirMap", envirMap, 1);
     
-    //floor texture
-    shader.setUniform1f("reflectivity", 0.f);
+    
+    // top 1 the wizard
+    shader.setUniform1f("reflectivity", 0.4f);
+    texBlackWizard.getTexture().bind(0);
+    ofPushMatrix();
+    ofTranslate(0.,-1.15, -2.);
+        blackWizard.draw();
+    ofPopMatrix();
+    texBlackWizard.getTexture().unbind(0);
+
+    // left 2 goat skull a
+    shader.setUniform1f("reflectivity", 0.4f);
+    texGoatSkullA.getTexture().bind(0);
+    ofPushMatrix();
+    ofTranslate(-2, -1.2, 0);
+        goatSkullA.draw();
+    ofPopMatrix();
+    texGoatSkullA.getTexture().unbind(0);
+    
+    // bottom 3 lobster
+    shader.setUniform1f("reflectivity", 0.2f);
+    TexLobster.getTexture().bind(0);
+    ofPushMatrix();
+    ofTranslate(0, -1.2, 2);
+        lobster.draw();
+    ofPopMatrix();
+    TexLobster.getTexture().unbind(0);
+    
+    // right 4 goat skull b
+    shader.setUniform1f("reflectivity", 0.2f);
+    texGoatSkullB.getTexture().bind(0);
+    ofPushMatrix();
+    ofTranslate(2, -1.2, 0);
+        goatSkullB.draw();
+    ofPopMatrix();
+    texGoatSkullB.getTexture().unbind(0);
+    
+    //shader.end(); cam.end(); return;/// lance line to preview
+
+    //floor
+    shader.setUniform1f("reflectivity", 0.1f);
     floorTex.getTexture().bind(0);
     floorMesh.draw();
     floorTex.getTexture().unbind(0);
     
-    //shader.end(); cam.end(); return;/// lance line to preview
     
-    //wall texture
+    //wall
     wallTex.getTexture().bind(0);
         wallsMesh.draw();
     wallTex.getTexture().unbind(0);
     
-    //ceiling texture
+    //ceiling
     ceilingTex.getTexture().bind(0);
         ceilingMesh.draw();
     ceilingTex.getTexture().unbind(0);
     
-    ofPushMatrix(); // LOGO
+    // logo
+    ofPushMatrix();
     ofTranslate(0, -0.2, 0);
+    ofRotateDeg(logoRotaton, 0, 1, 0);
     MusicOnTex.getTexture().bind(0);
         musicOnMesh.draw();
     MusicOnTex.getTexture().unbind(0);
     ofPopMatrix();
     
-    ofPushMatrix(); // TORUS
+    //torus
+    ofPushMatrix();
     ofTranslate(0., -1.4, 0.);
     ofRotateDeg(0, 1, 1, 0);
     torusTex.getTexture().bind(0);
@@ -480,21 +582,31 @@ void ofApp::draw(){
     torusTex.getTexture().unbind(0);
     ofPopMatrix();
     
+    // spheres
     shader.setUniform1f("reflectivity", 0.4f);
     sphereTex.getTexture().bind(0);
-    
-    
     for (auto& b: balls){
         b.draw(mesh);
     }
-    
     sphereTex.getTexture().unbind(0);
     
+    // fountain
+    shader.setUniform1f("reflectivity", 0.4f);
+    sphereTex.getTexture().bind(0);
+    ofPushMatrix();
+    ofTranslate(0.,-1.4 + 0.01, 0);
+        fountainWaterMesh.draw();
+    ofPopMatrix();
+    sphereTex.getTexture().unbind(0);
+
     shader.end();
     cam.end();
+    
+
+
 }
 
-
+//--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
 }
