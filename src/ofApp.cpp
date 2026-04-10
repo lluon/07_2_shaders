@@ -41,22 +41,40 @@ void addNormalLines(ofMesh & dst, const ofMesh & src, float len = 0.1, ofFloatCo
 
 void calcNormals(ofMesh& m) {
     m.clearNormals();
-    
+    for (int i = 0; i < m.getNumVertices(); i++){
+        m.addNormal(vec3(0));
+    }
     if(m.getNumIndices()){
-        for (int i = 0; i < m.getNumVertices(); i++) m.addNormal(vec3(0));
-        for (int i = 0; i < m.getNumIndices(); i += 3) {
-            int i1 = m.getIndex(i); int i2 = m.getIndex(i + 1); int i3 = m.getIndex(i + 2);
-            vec3 v1 = m.getVertex(i1); vec3 v2 = m.getVertex(i2); vec3 v3 = m.getVertex(i3);
+        // PLY case
+        for (int i = 0; i < m.getNumIndices(); i +=3){
+            int i1 = m.getIndex(i);
+            int i2 = m.getIndex(i + 1);
+            int i3 = m.getIndex(i + 2);
+            vec3 v1 = m.getVertex(i1);
+            vec3 v2 = m.getVertex(i2);
+            vec3 v3 = m.getVertex(i3);
+
             vec3 n = normalize(cross(v2 - v1, v3 - v1));
-            m.getNormals()[i1] += n; m.getNormals()[i2] += n; m.getNormals()[i3] += n;
-        }
+            
+            m.getNormals()[i1] += n;
+            m.getNormals()[i2] += n;
+            m.getNormals()[i3] += n;
+
+    }
         // Dr Putnam add on
         for (auto & n : m.getNormals()) n = normalize(n);
-    } else { // non-indexed mesh (just triangles)
+        
+    } else { // not indexed mesh
         for (int i = 0; i < m.getNumVertices(); i += 3) {
-            vec3 v1 = m.getVertex(i+0); vec3 v2 = m.getVertex(i+1); vec3 v3 = m.getVertex(i+2);
+            vec3 v1 = m.getVertex(i+0);
+            vec3 v2 = m.getVertex(i+1);
+            vec3 v3 = m.getVertex(i+2);
+            
             vec3 n = normalize(cross(v2 - v1, v3 - v1));
-            for(int k=0; k<3; ++k) m.addNormal(n);
+            
+            m.setNormal(i + 0, n);
+            m.setNormal(i + 1, n);
+            m.setNormal(i + 2, n);
         }
     }
 }
@@ -158,15 +176,23 @@ void ofApp::setup(){
     MusicOnTex.load("gem.jpeg");
     floorTex.load("blackandwhite.jpeg");
     envirMap.load("envirMap.jpg");
+    envirMap.getTexture().generateMipmap();
+    envirMap.getTexture().setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    
     
     texGoatSkullA.load("gold.jpg");
-    texGoatSkullB.load("wall.jpeg");
+    texGoatSkullB.load("gold.jpg");
     texBlackWizard.load("blackmarble.jpg");
-    TexLobster.load("pinkMarble.jpg");
+    TexLobster.load("goldTwo.jpg");
     
     // Wrap settings for floor repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     torusTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    texBlackWizard.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    TexLobster.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    texGoatSkullA.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    texGoatSkullB.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+
         
     // Build shader (from GLSL code)
     build(shader, R"(        
@@ -224,15 +250,24 @@ void ofApp::setup(){
          Light light1;
          light1.pos = vec3(1., 0., 0.);
          light1.strength = 1.;
-         light1.halfDist = 3.0;
-         light1.ambient = 0.8;
-         light1.diffuse = vec3(0., 0., 0.); 
+         light1.halfDist = 0.6;
+         light1.ambient = 0.5;
+         light1.diffuse = vec3(0., 0., 1); 
          light1.specular = light1.diffuse;
  
          Light light2 = light1;
          light2.pos = -light1.pos;
-         light2.diffuse = vec3(1., 1., 1.);
+         light2.diffuse = vec3(1., 0., 0.);
          light2.specular = light2.diffuse;
+ 
+         Light light3;
+         light3.pos = vec3(0., 1.5, 0.);
+         light3.strength = 1.2;
+         light3.halfDist = 4.0;
+         light3.ambient = 0.1;
+         light3.diffuse = vec3(1., 1., 1.); 
+         light3.specular = vec3(1.);
+
     
          // Material setup  
          Material mtrl;
@@ -243,7 +278,8 @@ void ofApp::setup(){
          // light fall lights 
          LightFall fall = computeLightFall(pos, N, eye, light1, mtrl);
          addTo(fall, computeLightFall(pos, N, eye, light2, mtrl));
-  
+         addTo(fall, computeLightFall(pos, N, eye, light3, mtrl));
+
          // pass the calculated light color to the fragment shader CHANGE (7,2,3)
          vec3 col = lightColor(fall, mtrl); 
          
@@ -259,18 +295,19 @@ void ofApp::setup(){
  )");
     // my spheres (spilling in the fountain)
     mesh = ofMesh::sphere(0.5, 16);
-    
-    // my four statue int ther corners
-    blackWizard.load("GreyWizard.ply"); // load black Wizard statue
-    goatSkullA.load("Goat_skull_a.ply"); // load black Wizard statue
-    goatSkullB.load("Goat_skull_b.ply"); // load black Wizard statue
-    lobster.load("lobsterz.ply"); // load black Wizard statue
 
-    // generate normals
+
+
+    // my four statue int ther corners
+    blackWizard.load("GreyWizard_.ply"); // load black Wizard statue
     calcNormals(blackWizard);
+    goatSkullA.load("Goat_skull_a.ply"); // load goat skull a statue
     calcNormals(goatSkullA);
+    goatSkullB.load("Goat_skull_b.ply"); // load black Wizard statue
     calcNormals(goatSkullB);
+    lobster.load("lobsterz.ply"); // load black Wizard statue
     calcNormals(lobster);
+    // generate normals
 
     // my torus
     int Nx = 50, Ny = 50;
@@ -342,7 +379,7 @@ void ofApp::setup(){
     calcNormals(musicOnMesh);
     
     
-    Nx = 400; // resolution
+    Nx = 200; // resolution
     int Ny_wall = 40;
     float r_base = 2.6;
     float h = 1.5;
@@ -510,7 +547,7 @@ void ofApp::draw(){
     
     
     // top 1 the wizard
-    shader.setUniform1f("reflectivity", 0.4f);
+    shader.setUniform1f("reflectivity", 0.0f);
     texBlackWizard.getTexture().bind(0);
     ofPushMatrix();
     ofTranslate(0.,-1.15, -2.);
@@ -519,7 +556,7 @@ void ofApp::draw(){
     texBlackWizard.getTexture().unbind(0);
 
     // left 2 goat skull a
-    shader.setUniform1f("reflectivity", 0.4f);
+    shader.setUniform1f("reflectivity", 0.1f);
     texGoatSkullA.getTexture().bind(0);
     ofPushMatrix();
     ofTranslate(-2, -1.2, 0);
@@ -528,7 +565,7 @@ void ofApp::draw(){
     texGoatSkullA.getTexture().unbind(0);
     
     // bottom 3 lobster
-    shader.setUniform1f("reflectivity", 0.2f);
+    shader.setUniform1f("reflectivity", 0.1f);
     TexLobster.getTexture().bind(0);
     ofPushMatrix();
     ofTranslate(0, -1.2, 2);
@@ -537,7 +574,7 @@ void ofApp::draw(){
     TexLobster.getTexture().unbind(0);
     
     // right 4 goat skull b
-    shader.setUniform1f("reflectivity", 0.2f);
+    shader.setUniform1f("reflectivity", 0.1f);
     texGoatSkullB.getTexture().bind(0);
     ofPushMatrix();
     ofTranslate(2, -1.2, 0);
@@ -555,16 +592,19 @@ void ofApp::draw(){
     
     
     //wall
+    shader.setUniform1f("reflectivity", 0.f);
     wallTex.getTexture().bind(0);
         wallsMesh.draw();
     wallTex.getTexture().unbind(0);
     
     //ceiling
+    shader.setUniform1f("reflectivity", 0.f);
     ceilingTex.getTexture().bind(0);
         ceilingMesh.draw();
     ceilingTex.getTexture().unbind(0);
     
     // logo
+    shader.setUniform1f("reflectivity", 0.f);
     ofPushMatrix();
     ofTranslate(0, -0.2, 0);
     ofRotateDeg(logoRotaton, 0, 1, 0);
@@ -583,7 +623,7 @@ void ofApp::draw(){
     ofPopMatrix();
     
     // spheres
-    shader.setUniform1f("reflectivity", 0.4f);
+    shader.setUniform1f("reflectivity", 0.3f);
     sphereTex.getTexture().bind(0);
     for (auto& b: balls){
         b.draw(mesh);

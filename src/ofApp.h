@@ -69,8 +69,8 @@ class ofApp : public ofBaseApp{
         float tr = 0.1f; //minor radious
 
         //math claculation
-        float PI_calc = 355./113.;
-        float oneOverPi = 113./355.;
+        float PI_calc = 355.f/113.f;
+        float oneOverPi = 113.f/355.f;
         
         // logo animation
         float logoRotaton = 0;
