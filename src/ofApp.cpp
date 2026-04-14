@@ -182,14 +182,14 @@ void ofApp::setup(){
     
     texGoatSkullA.load("gold.jpg");
     texGoatSkullB.load("gold.jpg");
-    texBlackWizard.load("blackmarble.jpg");
-    TexLobster.load("goldTwo.jpg");
+    texTheAlchemist.load("blackMarble.jpeg");
+    TexTheWrittenWoman.load("texture_1.png");
     
     // Wrap settings for floor repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     torusTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
-    texBlackWizard.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
-    TexLobster.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    texTheAlchemist.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    TexTheWrittenWoman.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     texGoatSkullA.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     texGoatSkullB.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
 
@@ -272,8 +272,9 @@ void ofApp::setup(){
          // Material setup  
          Material mtrl;
          mtrl.diffuse = texture(tex,vtexcoord).rgb;
-         mtrl.specular = vec3(0.5);
-         mtrl.shine = 60.;
+
+         mtrl.specular = vec3(0.2);
+         mtrl.shine = 30.;
  
          // light fall lights 
          LightFall fall = computeLightFall(pos, N, eye, light1, mtrl);
@@ -299,14 +300,23 @@ void ofApp::setup(){
 
 
     // my four statue int ther corners
-    blackWizard.load("GreyWizard_.ply"); // load black Wizard statue
-    calcNormals(blackWizard);
+    TheAlchemist.load("GreyWizard_uv_last.ply"); // load black Wizard statue
+    TheAlchemist.enableTextures();
+    //calcNormals(blackWizard);
     goatSkullA.load("Goat_skull_a.ply"); // load goat skull a statue
-    calcNormals(goatSkullA);
+    goatSkullA.enableTextures();
+    //calcNormals(goatSkullA);
     goatSkullB.load("Goat_skull_b.ply"); // load black Wizard statue
-    calcNormals(goatSkullB);
-    lobster.load("lobsterz.ply"); // load black Wizard statue
-    calcNormals(lobster);
+    goatSkullB.enableTextures();
+    //calcNormals(goatSkullB);
+    TheWrittenWoman.load("FrostHuntress.ply"); // load black Wizard statue
+    TheWrittenWoman.enableTextures();
+    for (int i = 0; i < TheWrittenWoman.getNumTexCoords(); i++){
+        vec2 uv = TheWrittenWoman.getTexCoord(i);
+        uv.y = 1.0f -uv.y;
+        TheWrittenWoman.setTexCoord(i, uv);
+    }
+    //calcNormals(lobster);
     // generate normals
 
     // my torus
@@ -547,16 +557,18 @@ void ofApp::draw(){
     
     
     // top 1 the wizard
-    shader.setUniform1f("reflectivity", 0.0f);
-    texBlackWizard.getTexture().bind(0);
+    ofSetColor(255);
+    shader.setUniform1f("reflectivity", 0.1f);
+    texTheAlchemist.getTexture().bind(0);
+    shader.setUniformTexture("tex",texTheAlchemist.getTexture(),0);
     ofPushMatrix();
     ofTranslate(0.,-1.15, -2.);
-        blackWizard.draw();
+    TheAlchemist.draw();
     ofPopMatrix();
-    texBlackWizard.getTexture().unbind(0);
+    texTheAlchemist.getTexture().unbind(0);
 
     // left 2 goat skull a
-    shader.setUniform1f("reflectivity", 0.1f);
+    shader.setUniform1f("reflectivity", 0.2f);
     texGoatSkullA.getTexture().bind(0);
     ofPushMatrix();
     ofTranslate(-2, -1.2, 0);
@@ -565,16 +577,17 @@ void ofApp::draw(){
     texGoatSkullA.getTexture().unbind(0);
     
     // bottom 3 lobster
-    shader.setUniform1f("reflectivity", 0.1f);
-    TexLobster.getTexture().bind(0);
+    shader.setUniform1f("reflectivity", 0.0f);
+    TexTheWrittenWoman.getTexture().bind(0);
+    shader.setUniformTexture("tex", TexTheWrittenWoman.getTexture(), 0);
     ofPushMatrix();
     ofTranslate(0, -1.2, 2);
-        lobster.draw();
+    TheWrittenWoman.draw();
     ofPopMatrix();
-    TexLobster.getTexture().unbind(0);
+    TexTheWrittenWoman.getTexture().unbind(0);
     
     // right 4 goat skull b
-    shader.setUniform1f("reflectivity", 0.1f);
+    shader.setUniform1f("reflectivity", 0.4f);
     texGoatSkullB.getTexture().bind(0);
     ofPushMatrix();
     ofTranslate(2, -1.2, 0);

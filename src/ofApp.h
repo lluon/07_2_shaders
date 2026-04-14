@@ -41,24 +41,24 @@ class ofApp : public ofBaseApp{
     
         ofMesh fountainWaterMesh; //water in the fountain
         
-        ofMesh goatSkullA;      // goat skull A
-        ofMesh goatSkullB;      // goat skull B
-        ofMesh blackWizard;     // black wizard statue
-        ofMesh lobster;         // lobster
+        ofMesh goatSkullA;       // goat skull A
+        ofMesh goatSkullB;       // goat skull B
+        ofMesh TheAlchemist;     // TheAlchemist ALEJANDRO JODOROWSKY
+        ofMesh TheWrittenWoman;  // the written woman
 
         // Textures:
-        ofImage wallTex;        // wall texure
-        ofImage ceilingTex;     // ceiling texure
-        ofImage sphereTex;      // sphere texure
-        ofImage torusTex;       // torus texture
-        ofImage MusicOnTex;     // logo texture
-        ofImage floorTex;       // floor texture
-        ofImage envirMap;       //chrome
+        ofImage wallTex;         // wall texure
+        ofImage ceilingTex;      // ceiling texure
+        ofImage sphereTex;       // sphere texure
+        ofImage torusTex;        // torus texture
+        ofImage MusicOnTex;      // logo texture
+        ofImage floorTex;        // floor texture
+        ofImage envirMap;        //chrome
 
         ofImage texGoatSkullA;      // goat skull A texture
         ofImage texGoatSkullB;      // goat Skull B texture
-        ofImage texBlackWizard;     // black wizard texture
-        ofImage TexLobster;         // lobster texture
+        ofImage texTheAlchemist;    // THE ALCHEMIST texture
+        ofImage TexTheWrittenWoman; // TheWrittenWoman texture
 
     
         //BoingBall
