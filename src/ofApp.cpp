@@ -163,7 +163,7 @@ void ofApp::setup(){
     cam.setFarClip(100.);
     
     // Other setup for 3D rendering
-    ofEnableDepthTest(); // test fragments against depth buffer (for opaque geometry)
+    ofEnableDepthTest(); // test fragments against depth buffer
     ofEnableNormalizedTexCoords(); // use [0,1] range for UVs
     ofDisableArbTex(); // disable use of legacy rect textures
     ofSetFrameRate(60); // must be set for ofGetTargetFrameRate to work
@@ -176,14 +176,15 @@ void ofApp::setup(){
     MusicOnTex.load("gem.jpeg");
     floorTex.load("blackandwhite.jpeg");
     envirMap.load("envirMap.jpg");
+    envirMap.getTexture().setTextureMinMagFilter(GL_LINEAR, GL_LINEAR);
     envirMap.getTexture().generateMipmap();
-    envirMap.getTexture().setTextureMinMagFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+
     
     
     texGoatSkullA.load("gold.jpg");
     texGoatSkullB.load("gold.jpg");
     texTheAlchemist.load("blackMarble.jpeg");
-    TexTheWrittenWoman.load("texture_1.png");
+    TexTheWrittenWoman.load("texture_2.png");
     
     // Wrap settings for floor repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
@@ -226,16 +227,19 @@ void ofApp::setup(){
  )", glslLighting() + R"(
  
    // Fragment program (7,2,3)
-     uniform vec3 eye;
+    uniform vec3 eye;
  
     uniform sampler2D tex;
-    uniform sampler2D envirMap; //chrome fx
-    uniform float reflectivity; //chrome fx
-    uniform float u_oneOverPi;  //chrome fx
+    uniform sampler2D envirMap;     //chrome fx hri image
+    uniform float reflectivity;     //chrome fx reflectivity
+    uniform float u_oneOverPi;      //chrome fx inverted
+    uniform vec3 u_light1Col;       //dynamic illumination blue
+    uniform vec3 u_light2Col;       //dynamic illumination red
+    uniform float u_light3Strength; //dynamic ill written woman & alchemist
      
-     in vec3 vposition;
-     in vec3 vnormal;
-     in vec3 vcolor;
+    in vec3 vposition;
+    in vec3 vnormal;
+    in vec3 vcolor;
  
     in vec2 vtexcoord;
   
@@ -252,7 +256,7 @@ void ofApp::setup(){
          light1.strength = 1.;
          light1.halfDist = 0.6;
          light1.ambient = 0.5;
-         light1.diffuse = vec3(0., 0., 1); 
+         light1.diffuse = u_light1Col; 
          light1.specular = light1.diffuse;
  
          Light light2 = light1;
@@ -261,8 +265,8 @@ void ofApp::setup(){
          light2.specular = light2.diffuse;
  
          Light light3;
-         light3.pos = vec3(0., 1.5, 0.);
-         light3.strength = 1.2;
+         light3.pos = vec3(0., 1.5, -1.);
+         light3.strength = u_light3Strength;
          light3.halfDist = 4.0;
          light3.ambient = 0.1;
          light3.diffuse = vec3(1., 1., 1.); 
@@ -302,21 +306,24 @@ void ofApp::setup(){
     // my four statue int ther corners
     TheAlchemist.load("GreyWizard_uv_last.ply"); // load black Wizard statue
     TheAlchemist.enableTextures();
+    TheAlchemist.flatNormals(); // duplicate vertices and remove indices (normals appear wrong, so dr Putnam generate them ourself)
+    calcNormals(TheAlchemist);
+
     //calcNormals(blackWizard);
     goatSkullA.load("Goat_skull_a.ply"); // load goat skull a statue
     goatSkullA.enableTextures();
     //calcNormals(goatSkullA);
-    goatSkullB.load("Goat_skull_b.ply"); // load black Wizard statue
+    goatSkullB.load("Goat_skull_b.ply"); // load the alchemist model
     goatSkullB.enableTextures();
     //calcNormals(goatSkullB);
-    TheWrittenWoman.load("FrostHuntress.ply"); // load black Wizard statue
+    TheWrittenWoman.load("FrostHuntress.ply"); // load the written woman model
     TheWrittenWoman.enableTextures();
     for (int i = 0; i < TheWrittenWoman.getNumTexCoords(); i++){
         vec2 uv = TheWrittenWoman.getTexCoord(i);
         uv.y = 1.0f -uv.y;
         TheWrittenWoman.setTexCoord(i, uv);
     }
-    //calcNormals(lobster);
+    //calcNormals(TheWrittenWoman);
     // generate normals
 
     // my torus
@@ -551,49 +558,66 @@ void ofApp::draw(){
     
     
     shader.begin();
+    // case logic for uniforms
+    if (renderMode == 'w'){
+        shader.setUniform3f("u_light1Col", vec3(0, 0, 1)); // blue light on
+        shader.setUniform3f("u_light2Col", vec3(0, 0, 1)); // red light on
+        shader.setUniform1f("u_light3Strength", 0.0f); // off
+    } else if (renderMode == 'e') {
+        shader.setUniform3f("u_light1Col", vec3(1, 1, 1)); // blue light on
+        shader.setUniform3f("u_light2Col", vec3(1, 1, 1)); // red light on
+        shader.setUniform1f("u_light3Strength", 1.2f); // full
+    } else if (renderMode == 'r') {
+        shader.setUniform3f("u_light1Col", vec3(0, 0, 0)); // blue light on
+        shader.setUniform3f("u_light2Col", vec3(0, 0, 0)); // red light on
+        shader.setUniform1f("u_light3Strength", 1.5f); // dimmed spotlight
+    }
+    
     shader.setUniform3f("eye", cam.getPosition());
     shader.setUniform1f("u_oneOverPi", oneOverPi);
     shader.setUniformTexture("envirMap", envirMap, 1);
     
-    
-    // top 1 the wizard
-    ofSetColor(255);
-    shader.setUniform1f("reflectivity", 0.1f);
-    texTheAlchemist.getTexture().bind(0);
-    shader.setUniformTexture("tex",texTheAlchemist.getTexture(),0);
-    ofPushMatrix();
-    ofTranslate(0.,-1.15, -2.);
-    TheAlchemist.draw();
-    ofPopMatrix();
-    texTheAlchemist.getTexture().unbind(0);
-
-    // left 2 goat skull a
-    shader.setUniform1f("reflectivity", 0.2f);
-    texGoatSkullA.getTexture().bind(0);
-    ofPushMatrix();
-    ofTranslate(-2, -1.2, 0);
+    if (renderMode !='r'){
+        // top 1 the wizard
+        ofSetColor(255);
+        shader.setUniform1f("reflectivity", 0.1f);
+        texTheAlchemist.getTexture().bind(0);
+        shader.setUniformTexture("tex",texTheAlchemist.getTexture(),0);
+        ofPushMatrix();
+        ofTranslate(0.,-1.15, -2.);
+        TheAlchemist.draw();
+        ofPopMatrix();
+        texTheAlchemist.getTexture().unbind(0);
+        
+        // left 2 goat skull a
+        shader.setUniform1f("reflectivity", 0.2f);
+        texGoatSkullA.getTexture().bind(0);
+        ofPushMatrix();
+        ofTranslate(-2, -1.2, 0);
         goatSkullA.draw();
-    ofPopMatrix();
-    texGoatSkullA.getTexture().unbind(0);
+        ofPopMatrix();
+        texGoatSkullA.getTexture().unbind(0);
+        
+        // right 4 goat skull b
+        shader.setUniform1f("reflectivity", 0.4f);
+        texGoatSkullB.getTexture().bind(0);
+        ofPushMatrix();
+        ofTranslate(2, -1.2, 0);
+        goatSkullB.draw();
+        ofPopMatrix();
+        texGoatSkullB.getTexture().unbind(0);
+    }
     
-    // bottom 3 lobster
+    // bottom 3 the written woman
     shader.setUniform1f("reflectivity", 0.0f);
     TexTheWrittenWoman.getTexture().bind(0);
     shader.setUniformTexture("tex", TexTheWrittenWoman.getTexture(), 0);
     ofPushMatrix();
     ofTranslate(0, -1.2, 2);
-    TheWrittenWoman.draw();
+        TheWrittenWoman.draw();
     ofPopMatrix();
     TexTheWrittenWoman.getTexture().unbind(0);
     
-    // right 4 goat skull b
-    shader.setUniform1f("reflectivity", 0.4f);
-    texGoatSkullB.getTexture().bind(0);
-    ofPushMatrix();
-    ofTranslate(2, -1.2, 0);
-        goatSkullB.draw();
-    ofPopMatrix();
-    texGoatSkullB.getTexture().unbind(0);
     
     //shader.end(); cam.end(); return;/// lance line to preview
 
@@ -661,7 +685,9 @@ void ofApp::draw(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-    
+    if (key == 'w'|| key == 'e' || key == 'r' ){
+        renderMode = key;
+    }
 }
 
 //--------------------------------------------------------------

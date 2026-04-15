@@ -23,8 +23,10 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 		
-		ofEasyCam cam;       // cam
-		ofShader shader;     // shader
+		ofEasyCam cam;          // cam
+		ofShader shader;        // shader
+    
+        char renderMode = 'e';  // base toggle render
     
         // Meshes:
 		ofMesh mesh;         // sphere
