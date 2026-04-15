@@ -25,6 +25,7 @@ class ofApp : public ofBaseApp{
 		
 		ofEasyCam cam;          // cam
 		ofShader shader;        // shader
+        ofShader spriteShader;  // coloured dot sprites
     
         char renderMode = 'e';  // base toggle render
     
@@ -47,6 +48,8 @@ class ofApp : public ofBaseApp{
         ofMesh goatSkullB;       // goat skull B
         ofMesh TheAlchemist;     // TheAlchemist ALEJANDRO JODOROWSKY
         ofMesh TheWrittenWoman;  // the written woman
+    
+        ofMesh auraMesh;         // aurea globe around models
 
         // Textures:
         ofImage wallTex;         // wall texure
@@ -61,6 +64,7 @@ class ofApp : public ofBaseApp{
         ofImage texGoatSkullB;      // goat Skull B texture
         ofImage texTheAlchemist;    // THE ALCHEMIST texture
         ofImage TexTheWrittenWoman; // TheWrittenWoman texture
+        ofImage bubbleTex;          // bubble texture
 
     
         //BoingBall

@@ -3,6 +3,20 @@
 using namespace glm;
 
 //--------------------------------------------------------------
+// Sprite Aurea
+static void addRect (ofMesh& m, vec3 pos, ofColor col, float size){
+    int Nv = m.getVertices().size();
+    m.setMode(OF_PRIMITIVE_TRIANGLES);
+    for (int i = 0; i < 4; i++){
+        m.addVertex(pos);
+        m.addColor(col);
+        m.addNormal(vec3(size, 0., 0.));
+    }
+    m.addTriangle(Nv + 0, Nv + 1, Nv + 2);
+    m.addTriangle(Nv + 0, Nv + 2, Nv + 3);
+}
+
+//--------------------------------------------------------------
 // Quaterfoil structure formula
 float getQuaterfoilRadious(float t, float r_base){
     float x = std::cos(t);
@@ -139,16 +153,16 @@ static std::string glslLighting(){
         }
         
         // chromeEffect
-        vec3 chromeEffect (vec3 rayDir, sampler2D envirMap, float u_oneOverPi){
+        vec3 chromeEffect (vec3 rayDir, sampler2D envirMap, float mYoneOverPi){
             float tetha = atan(-rayDir.x,-rayDir.z);
             float phi = asin(rayDir.y);
-            vec2 uv = vec2(0.5 + 0.5 * tetha * u_oneOverPi, 0.5 - phi * u_oneOverPi);
+            vec2 uv = vec2(0.5 + 0.5 * tetha * mYoneOverPi, 0.5 - phi * mYoneOverPi);
             return texture(envirMap,uv).rgb;
         }
         // reflection calc
-        vec3 calcReflection(vec3 I, vec3 N, in sampler2D envirMap, float u_oneOverPi){
+        vec3 calcReflection(vec3 I, vec3 N, in sampler2D envirMap, float mYoneOverPi){
             vec3  rayDir = reflect(I,N);
-            return chromeEffect(rayDir, envirMap, u_oneOverPi);
+            return chromeEffect(rayDir, envirMap, mYoneOverPi);
         }
     
     )";
@@ -176,28 +190,26 @@ void ofApp::setup(){
     MusicOnTex.load("gem.jpeg");
     floorTex.load("blackandwhite.jpeg");
     envirMap.load("envirMap.jpg");
-    envirMap.getTexture().setTextureMinMagFilter(GL_LINEAR, GL_LINEAR);
-    envirMap.getTexture().generateMipmap();
-
-    
-    
     texGoatSkullA.load("gold.jpg");
     texGoatSkullB.load("gold.jpg");
     texTheAlchemist.load("blackMarble.jpeg");
     TexTheWrittenWoman.load("texture_2.png");
+    bubbleTex.load("BubbleTex.png");
     
-    // Wrap settings for floor repetition
+    // Wrap settings for texture repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     torusTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     texTheAlchemist.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     TexTheWrittenWoman.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     texGoatSkullA.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     texGoatSkullB.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
+    envirMap.getTexture().setTextureMinMagFilter(GL_LINEAR, GL_LINEAR);
+    envirMap.getTexture().generateMipmap();
 
-        
-    // Build shader (from GLSL code)
+    
+    // Build general scene shader (from GLSL code)
     build(shader, R"(        
-        // Vertex program
+        // Vertex program 
         uniform mat4 projectionMatrix;
         uniform mat4 viewMatrix;
         uniform mat4 modelMatrix;
@@ -205,21 +217,19 @@ void ofApp::setup(){
         in vec4 position;
         in vec3 normal;
         in vec3 color;
- 
+
         in vec2 texcoord;
         
         out vec3 vposition;
         out vec3 vnormal;
         out vec3 vcolor;
- 
+
         out vec2 vtexcoord;
  
       void main(){
   
         vcolor = color;
- 
         vtexcoord = texcoord;
- 
         vnormal = mat3(modelMatrix) * normal; 
         vposition = (modelMatrix*position).xyz;
         gl_Position = projectionMatrix * viewMatrix * vec4(vposition, 1.);
@@ -228,19 +238,20 @@ void ofApp::setup(){
  
    // Fragment program (7,2,3)
     uniform vec3 eye;
- 
+    uniform float mYalpha;
     uniform sampler2D tex;
     uniform sampler2D envirMap;     //chrome fx hri image
     uniform float reflectivity;     //chrome fx reflectivity
-    uniform float u_oneOverPi;      //chrome fx inverted
-    uniform vec3 u_light1Col;       //dynamic illumination blue
-    uniform vec3 u_light2Col;       //dynamic illumination red
-    uniform float u_light3Strength; //dynamic ill written woman & alchemist
+    uniform float mYoneOverPi;      //chrome fx inverted
+    uniform vec3 mYlight1Col;       //dynamic illumination blue
+    uniform vec3 mYlight2Col;       //dynamic illumination red
+    uniform float mYlight3Strength; //dynamic ill power
+    uniform vec3 fullLightPos;      // position of the dinamic light 
      
     in vec3 vposition;
     in vec3 vnormal;
     in vec3 vcolor;
- 
+    
     in vec2 vtexcoord;
   
      out vec4 fragColor;
@@ -256,27 +267,27 @@ void ofApp::setup(){
          light1.strength = 1.;
          light1.halfDist = 0.6;
          light1.ambient = 0.5;
-         light1.diffuse = u_light1Col; 
+         light1.diffuse = mYlight1Col; 
          light1.specular = light1.diffuse;
  
          Light light2 = light1;
          light2.pos = -light1.pos;
-         light2.diffuse = vec3(1., 0., 0.);
+         light2.diffuse = mYlight2Col;         
          light2.specular = light2.diffuse;
  
          Light light3;
-         light3.pos = vec3(0., 1.5, -1.);
-         light3.strength = u_light3Strength;
-         light3.halfDist = 4.0;
+         light3.pos = fullLightPos;
+         light3.strength = mYlight3Strength;
+         light3.halfDist = 2.0;
          light3.ambient = 0.1;
          light3.diffuse = vec3(1., 1., 1.); 
          light3.specular = vec3(1.);
-
+ 
     
          // Material setup  
          Material mtrl;
          mtrl.diffuse = texture(tex,vtexcoord).rgb;
-
+ 
          mtrl.specular = vec3(0.2);
          mtrl.shine = 30.;
  
@@ -284,38 +295,97 @@ void ofApp::setup(){
          LightFall fall = computeLightFall(pos, N, eye, light1, mtrl);
          addTo(fall, computeLightFall(pos, N, eye, light2, mtrl));
          addTo(fall, computeLightFall(pos, N, eye, light3, mtrl));
-
+ 
          // pass the calculated light color to the fragment shader CHANGE (7,2,3)
          vec3 col = lightColor(fall, mtrl); 
          
          // crome fx
          vec3 I = normalize(vposition - eye);
-         vec3 reflCol = calcReflection(I, N, envirMap, u_oneOverPi);
-         col = mix(col, reflCol, reflectivity);
- 
-         // moved (7,2,3)
-         fragColor = vec4(col, 1.);
+         vec3 reflCol = calcReflection(I, N, envirMap, mYoneOverPi);
+         
+         vec3 reflectionTint = mix(mYlight1Col, mYlight2Col, 0.5);
+         col = mix(col, reflCol * reflectionTint, reflectivity);
+         fragColor = vec4(col, mYalpha);
     }
  
  )");
+    
+    
+    // sprite shader (from sec 9.6 color/size)
+    build(spriteShader, R"(
+     // Vertex program sec 9.5 optimization
+     uniform mat4 modelViewProjectionMatrix;
+     uniform mat4 cameraMatrix; //sec 9.2
+        
+     in vec4 position;
+     in vec4 color;
+     in vec3 normal;
+     out vec2 spriteCoord; //spritecoordinatein[-1,1]
+     out vec4 vColor; 
+    
+     void main(){
+        
+        vColor = color;
+        float size = normal.x;
+    
+         switch(gl_VertexID % 4){
+             case 0: spriteCoord = vec2(-1., -1.); break;
+             case 1: spriteCoord = vec2(1., -1.); break;
+             case 2: spriteCoord = vec2(1., 1.); break;
+             case 3: spriteCoord = vec2(-1., 1.); break;
+        }
+        
+        vec4 offset = cameraMatrix * vec4(spriteCoord * size, 0., 0.); 
+         gl_Position = modelViewProjectionMatrix * (position + offset);
+        
+     }
+    )", R"(
+    // Fragment program
+    in vec2 spriteCoord; // sprite coordinate in [-1,1]
+    in vec4 vColor;
+    
+    uniform vec3 mYcolor; 
+ 
+    out vec4 fragColor;
+    
+    // sec 9.1
+    void main(){
+        float rsqr = dot(spriteCoord, spriteCoord);
+        if (rsqr > 1.) discard;
+        float a = 1 - rsqr; // inverted parabola
+         fragColor = vec4 (vColor.rgb * mYcolor * a, a);
+    }
+ )");
+    
     // my spheres (spilling in the fountain)
-    mesh = ofMesh::sphere(0.5, 16);
-
-
-
+    mesh = ofMesh::sphere(0.5, 32);
+    
+    auraMesh.clear();
+    for (int i = 0; i < 100; i++){
+        auto p = ofRandomUniform<vec3>(-1.,1.);
+        ofColor c;
+        c.setHsb(ofRandom(255), 180, 155);
+        float s = ofRandom(0.05, 0.15);
+        addRect(auraMesh, p, c, s);
+    }
+    
+    
     // my four statue int ther corners
     TheAlchemist.load("GreyWizard_uv_last.ply"); // load black Wizard statue
+    TheAlchemist.flatNormals(); // duplicate vertices and remove indices
     TheAlchemist.enableTextures();
-    TheAlchemist.flatNormals(); // duplicate vertices and remove indices (normals appear wrong, so dr Putnam generate them ourself)
     calcNormals(TheAlchemist);
-
-    //calcNormals(blackWizard);
+    
     goatSkullA.load("Goat_skull_a.ply"); // load goat skull a statue
+    goatSkullA.flatNormals(); // duplicate vertices and remove indices
     goatSkullA.enableTextures();
-    //calcNormals(goatSkullA);
+    calcNormals(goatSkullA);
+    
     goatSkullB.load("Goat_skull_b.ply"); // load the alchemist model
+    goatSkullB.flatNormals();
     goatSkullB.enableTextures();
-    //calcNormals(goatSkullB);
+    calcNormals(goatSkullB);
+    
     TheWrittenWoman.load("FrostHuntress.ply"); // load the written woman model
     TheWrittenWoman.enableTextures();
     for (int i = 0; i < TheWrittenWoman.getNumTexCoords(); i++){
@@ -323,9 +393,10 @@ void ofApp::setup(){
         uv.y = 1.0f -uv.y;
         TheWrittenWoman.setTexCoord(i, uv);
     }
-    //calcNormals(TheWrittenWoman);
+    calcNormals(TheWrittenWoman);
+    
     // generate normals
-
+    
     // my torus
     int Nx = 50, Ny = 50;
     torusMesh.setMode(OF_PRIMITIVE_TRIANGLES);
@@ -346,7 +417,7 @@ void ofApp::setup(){
             }
         }
     }
-
+    
     
     for ( auto & p : torusMesh.getVertices()){
         auto t = 2. * PI_calc * p.x;
@@ -479,7 +550,7 @@ void ofApp::setup(){
     floorMesh.setMode(OF_PRIMITIVE_TRIANGLES);
     float h_bottom = -h;
     
-//    f_center ={f_center.x,f_center.z,f_center.y};
+    //    f_center ={f_center.x,f_center.z,f_center.y};
     floorMesh.addVertex(vec3 (0, h_bottom, 0));
     floorMesh.addTexCoord(vec2(0.5, 0.5));
     
@@ -502,7 +573,7 @@ void ofApp::setup(){
         }
     }
     calcNormals(floorMesh);
-
+    
     // fountain setup
     ofSetRandomSeed(58309834);
     for (int i = 0; i < 50; i++){
@@ -537,6 +608,7 @@ void ofApp::setup(){
             fountainWaterMesh.addTriangle(0, current, 1);
         }
     }
+    renderMode = 'e';
 }
 
 
@@ -555,41 +627,55 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     cam.begin();
-    
-    
     shader.begin();
+    shader.setUniform1i("tex", 0);
+    shader.setUniform1i("envirMap", 1);
+    shader.setUniform3f("eye", cam.getPosition());
+    shader.setUniform1f("mYoneOverPi", oneOverPi);
+    shader.setUniformTexture("envirMap", envirMap, 1);
+
     // case logic for uniforms
     if (renderMode == 'w'){
-        shader.setUniform3f("u_light1Col", vec3(0, 0, 1)); // blue light on
-        shader.setUniform3f("u_light2Col", vec3(0, 0, 1)); // red light on
-        shader.setUniform1f("u_light3Strength", 0.0f); // off
+        shader.setUniform3f("mYlight1Col", vec3(0., 0., 1.)); // blue light on
+        shader.setUniform3f("mYlight2Col", vec3(1., 0., 0.)); // red light on
+        shader.setUniform3f("fullLightPos",vec3(0., 0.5, -1.)); // white light position
+       shader.setUniform1f("mYlight3Strength", 0.5f); // half on
     } else if (renderMode == 'e') {
-        shader.setUniform3f("u_light1Col", vec3(1, 1, 1)); // blue light on
-        shader.setUniform3f("u_light2Col", vec3(1, 1, 1)); // red light on
-        shader.setUniform1f("u_light3Strength", 1.2f); // full
+        shader.setUniform3f("mYlight1Col", vec3(1., 0.5, 0.)); // orange on
+        shader.setUniform3f("mYlight2Col", vec3(0., 1., 1.)); // light blue on
+        shader.setUniform3f("fullLightPos",vec3(0., 1., 1.)); // white light position
+        shader.setUniform1f("mYlight3Strength", 0.1f); // white light on written woman
     } else if (renderMode == 'r') {
-        shader.setUniform3f("u_light1Col", vec3(0, 0, 0)); // blue light on
-        shader.setUniform3f("u_light2Col", vec3(0, 0, 0)); // red light on
-        shader.setUniform1f("u_light3Strength", 1.5f); // dimmed spotlight
+        shader.setUniform3f("mYlight1Col", vec3(1., 0., 1.)); // magenta on
+        shader.setUniform3f("fullLightPos",vec3(0., 0.5, 1.)); // blu light position
+        shader.setUniform3f("mYlight2Col", vec3(1., 1., 0.)); // yellow light on
+        shader.setUniform1f("mYlight3Strength", 1.2f); // dimmed spotlight
     }
+    // opaque models
+    shader.setUniform1f("mYalpha", 1.f);
+    ofSetColor(255, 255, 255);
     
-    shader.setUniform3f("eye", cam.getPosition());
-    shader.setUniform1f("u_oneOverPi", oneOverPi);
-    shader.setUniformTexture("envirMap", envirMap, 1);
-    
+    // written woman
+    shader.setUniform1f("reflectivity", 0.0f);
+    TexTheWrittenWoman.getTexture().bind(0);
+    ofPushMatrix();
+    ofTranslate(0, -1.2, 2);
+        TheWrittenWoman.draw();
+    ofPopMatrix();
+    TexTheWrittenWoman.getTexture().unbind(0);
+
     if (renderMode !='r'){
-        // top 1 the wizard
+        // the alchemist
         ofSetColor(255);
         shader.setUniform1f("reflectivity", 0.1f);
         texTheAlchemist.getTexture().bind(0);
-        shader.setUniformTexture("tex",texTheAlchemist.getTexture(),0);
         ofPushMatrix();
         ofTranslate(0.,-1.15, -2.);
         TheAlchemist.draw();
         ofPopMatrix();
         texTheAlchemist.getTexture().unbind(0);
         
-        // left 2 goat skull a
+        // goat skull a
         shader.setUniform1f("reflectivity", 0.2f);
         texGoatSkullA.getTexture().bind(0);
         ofPushMatrix();
@@ -598,7 +684,7 @@ void ofApp::draw(){
         ofPopMatrix();
         texGoatSkullA.getTexture().unbind(0);
         
-        // right 4 goat skull b
+        //  goat skull b
         shader.setUniform1f("reflectivity", 0.4f);
         texGoatSkullB.getTexture().bind(0);
         ofPushMatrix();
@@ -608,18 +694,9 @@ void ofApp::draw(){
         texGoatSkullB.getTexture().unbind(0);
     }
     
-    // bottom 3 the written woman
-    shader.setUniform1f("reflectivity", 0.0f);
-    TexTheWrittenWoman.getTexture().bind(0);
-    shader.setUniformTexture("tex", TexTheWrittenWoman.getTexture(), 0);
-    ofPushMatrix();
-    ofTranslate(0, -1.2, 2);
-        TheWrittenWoman.draw();
-    ofPopMatrix();
-    TexTheWrittenWoman.getTexture().unbind(0);
     
-    
-    //shader.end(); cam.end(); return;/// lance line to preview
+
+    //shader.end(); cam.end(); return;/// DR Lance line to preview
 
     //floor
     shader.setUniform1f("reflectivity", 0.1f);
@@ -658,9 +735,37 @@ void ofApp::draw(){
         torusMesh.draw();
     torusTex.getTexture().unbind(0);
     ofPopMatrix();
+        
+    // aurea bubble around models
+    glDepthMask(GL_FALSE);
+    ofEnableBlendMode(OF_BLENDMODE_SCREEN);
+
+    shader.setUniform1f("mYalpha", 0.15f);
+    shader.setUniform1f("reflectivity", 0.2f);
+    bubbleTex.getTexture().bind(0);
     
-    // spheres
-    shader.setUniform1f("reflectivity", 0.3f);
+    if (renderMode == 'w'){
+        ofPushMatrix();
+        ofTranslate(0., -0.6, -2.);
+        ofRotateDeg(-logoRotaton, 0, 1, 0);
+        ofScale(1.8);
+        mesh.draw();
+        ofPopMatrix();
+    }
+    else if (renderMode == 'r'){
+        ofPushMatrix();
+        ofTranslate(0., -0.6, 2.);
+        ofRotateDeg(-logoRotaton, 0, 1, 0);
+        ofScale(1.8);
+        mesh.draw();
+        ofPopMatrix();
+    }
+    bubbleTex.getTexture().unbind(0);
+    glDepthMask(GL_TRUE);
+
+    // spheres water
+    shader.setUniform1f("mYalpha", 0.5f);
+    shader.setUniform1f("reflectivity", 0.4f);
     sphereTex.getTexture().bind(0);
     for (auto& b: balls){
         b.draw(mesh);
@@ -677,10 +782,32 @@ void ofApp::draw(){
     sphereTex.getTexture().unbind(0);
 
     shader.end();
+
+    // sprites
+    glDepthMask(GL_FALSE);
+    ofEnableBlendMode(OF_BLENDMODE_ADD);
+    spriteShader.begin();
+    spriteShader.setUniformMatrix4f("cameraMatrix", cam.getLocalTransformMatrix());
+
+    if (renderMode == 'w'){
+        spriteShader.setUniform3f("mYcolor", 1.f, 0.f, 0.f);
+        ofPushMatrix();
+        ofTranslate(0., -0.5, -2.);
+        auraMesh.draw();
+        ofPopMatrix();
+        
+    } else if (renderMode == 'r'){
+        spriteShader.setUniform3f("mYcolor", 1.f, 1.f, 1.f);
+        ofPushMatrix();
+        ofTranslate(0., -0.5, 2.);
+        auraMesh.draw();
+        ofPopMatrix();
+
+    }
+    spriteShader.end();
+    ofDisableBlendMode();
+    glDepthMask(GL_TRUE);
     cam.end();
-    
-
-
 }
 
 //--------------------------------------------------------------
