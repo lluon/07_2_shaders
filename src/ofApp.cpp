@@ -196,6 +196,7 @@ void ofApp::setup(){
     TexTheWrittenWoman.load("texture_2.png");
     bubbleTex.load("BubbleTex.png");
     
+    
     // Wrap settings for texture repetition
     floorTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     torusTex.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
@@ -205,6 +206,20 @@ void ofApp::setup(){
     texGoatSkullB.getTexture().setTextureWrap(GL_REPEAT, GL_REPEAT);
     envirMap.getTexture().setTextureMinMagFilter(GL_LINEAR, GL_LINEAR);
     envirMap.getTexture().generateMipmap();
+
+    // sound setup
+    backgroundSound.load("backgroundSound.wav");
+    backgroundSound.setLoop(true);
+    backgroundSound.setVolume(0.5);
+    backgroundSound.play();
+    
+    alchemistVoice.load("theAlchemist.mp3");
+    alchemistVoice.setLoop(false);
+    alchemistVoice.setMultiPlay(false);
+    
+    writtenWomanVoice.load("writtenWoman.mp3");
+    writtenWomanVoice.setLoop(false);
+    writtenWomanVoice.setMultiPlay(false);
 
     
     // Build general scene shader (from GLSL code)
@@ -814,6 +829,14 @@ void ofApp::draw(){
 void ofApp::keyPressed(int key){
     if (key == 'w'|| key == 'e' || key == 'r' ){
         renderMode = key;
+    //reset sound
+        alchemistVoice.stop();
+        writtenWomanVoice.stop();
+        if (renderMode == 'w'){
+            alchemistVoice.play();
+        } else if (renderMode == 'r'){
+            writtenWomanVoice.play();
+        }
     }
 }
 

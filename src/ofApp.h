@@ -60,12 +60,16 @@ class ofApp : public ofBaseApp{
         ofImage floorTex;        // floor texture
         ofImage envirMap;        //chrome
 
-        ofImage texGoatSkullA;      // goat skull A texture
-        ofImage texGoatSkullB;      // goat Skull B texture
-        ofImage texTheAlchemist;    // THE ALCHEMIST texture
-        ofImage TexTheWrittenWoman; // TheWrittenWoman texture
-        ofImage bubbleTex;          // bubble texture
+        ofImage texGoatSkullA;          // goat skull A texture
+        ofImage texGoatSkullB;          // goat Skull B texture
+        ofImage texTheAlchemist;        // THE ALCHEMIST texture
+        ofImage TexTheWrittenWoman;     // TheWrittenWoman texture
+        ofImage bubbleTex;              // bubble texture
 
+        // sounds:
+        ofSoundPlayer alchemistVoice;   // Alchemist voiceover
+        ofSoundPlayer writtenWomanVoice;// Written Woman Voiceover
+        ofSoundPlayer backgroundSound;  // background sound
     
         //BoingBall
         std::vector<BoingBall> balls;
